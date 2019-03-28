@@ -17,16 +17,18 @@
 'use strict'
 const createApi = require('../controllers/create-api')
 const Enforcer = require('openapi-enforcer')
-const files = require('../lib/files')
-const inquirer = require('inquirer')
 const path = require('path')
+
+const allowedDependencies = ['axios', 'mongodb', 'mysql', 'oracle', 'postgres', 'request']
 
 module.exports = async function (program) {
   program
     .command('create-api <oas-doc> <out-dir>')
     .description('Create a project')
     .option('-c, --controller <key>', 'The x-controller property name. Defaults to x-controller.')
-    .option('-d, --database <types>', 'Types of databases to initialize with. Use comma separated values to specify more than one. Valid values include: mongodb, mysql, oracle, postgres')
+    .option('-d, --dependencies <types>', 'The optional dependencies to initialize with. Use comma separated values to specify more than one. Valid values include: ' + allowedDependencies.join(', '))
+    .option('-i, --indent <value>', 'The code style of indent value to use. Defaults to two spaces.')
+    .option('-s, --semi-colon', 'Set this flag to use the code style of unnecessary semi-colons to your JavaScript')
     .option('-o, --operation <key>', 'The x-operation property name. Defaults to x-operation.')
     .option('-y', 'Use defaults instead of showing interactive prompts')
     .action(async (oasDoc, outDir, command) => {
@@ -52,37 +54,19 @@ module.exports = async function (program) {
           process.exit(1)
         }
 
-        let databases = []
-        if (command.database) {
-          const allowed = ['mongodb', 'mysql', 'oracle', 'postgresql']
-          command.database.split(',').forEach(name => {
-            if (allowed.indexOf(name) === -1) {
-              console.error('Invalid database specified: ' + name + '. Must be one of: ' + allowed.join(', '))
+        if (command.dependencies) {
+          command.dependencies.split(',').forEach(name => {
+            if (allowedDependencies.indexOf(name) === -1) {
+              console.error('Invalid database specified: ' + name + '. Must be one of: ' + allowedDependencies.join(', '))
               process.exit(1)
             }
-            databases.push(name)
           })
-        } else if (!command.Y) {
-          const answers = await inquirer.prompt([
-            {
-              name: 'databases',
-              type: 'checkbox',
-              message: 'Select database types your API will connect to:',
-              choices: [
-                { name: 'MongoDB', value: 'mongodb' },
-                { name: 'MySQL', value: 'mysql' },
-                { name: 'Oracle', value: 'oracle' },
-                { name: 'PostgreSQL', value: 'postgresql' },
-              ]
-            }
-          ])
-          databases = databases.concat(answers.databases)
         }
 
-        await createApi({
-          databases,
-          oasDocPath: oasDoc,
-          outDir,
+        await createApi(oasDoc, outDir, {
+          dependencies: command.dependencies,
+          indent: command.indent || '  ',
+          semiColon: command.semiColon ? ';' : '',
           xController: command.controller || 'x-controller',
           xOperation: command.operation || 'x-operation'
         })
