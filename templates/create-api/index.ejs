@@ -1,4 +1,6 @@
 'use strict'
+<% if (axios) { %>const axios = require('axios')<%= semiColon %>
+<% } -%>
 <% if (mongodb) { %>const MongoClient = require('mongodb').MongoClient<%= semiColon %>
 <% } -%>
 <% if (mysql) { %>const mysql = require('mysql2')<%= semiColon %>
