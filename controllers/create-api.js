@@ -138,6 +138,7 @@ module.exports = async function (oasDocPath, outDir, { dependencies=[], indent='
 
 function getDependencyKey (dependency) {
   switch (dependency.toLowerCase()) {
+    case 'axios': return 'axios'
     case 'chai': return 'chai@4'
     case 'express': return 'express@4'
     case 'dotenv': return 'dotenv@6'
