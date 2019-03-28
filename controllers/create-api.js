@@ -16,14 +16,11 @@
  **/
 'use strict'
 const Enforcer = require('openapi-enforcer')
-const { EOL } = require('os')
 const exec = require('../lib/exec')
 const fs = require('../lib/files')
 const path = require('path')
 const snippet = require('../lib/snippet')
 const template = require('../lib/template')
-
-const rxJsIdentifier = /^[$_a-zA-Z][$_a-zA-Z0-9]*$/
 
 module.exports = async function (oasDocPath, outDir, { dependencies=[], indent='  ', semiColon='', xController='x-controller', xOperation='x-operation' }) {
   const devDependencies = ['chai', 'mocha']
@@ -135,8 +132,8 @@ module.exports = async function (oasDocPath, outDir, { dependencies=[], indent='
 
   await Promise.all(promises)
 
-  // await exec('npm install ' + dependencies.map(getDependencyKey).join(' '), outDir)
-  // await exec('npm install --save-dev ' + devDependencies.map(getDependencyKey).join(' '), outDir)
+  await exec('npm install ' + dependencies.map(getDependencyKey).join(' '), outDir)
+  await exec('npm install --save-dev ' + devDependencies.map(getDependencyKey).join(' '), outDir)
 }
 
 function getDependencyKey (dependency) {
