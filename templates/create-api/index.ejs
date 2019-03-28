@@ -71,6 +71,7 @@ const server = require('./server')<%= semiColon %>
         port: 3000
     })<%= semiColon %>
 
+    <% if (mongodb || mysql || oracledb || postgres) { %>
     // when the server ends shut down database connections
     on('end', () => {<% if (mongodb) { %>
         mongoClient.close()<% } -%>
@@ -81,7 +82,8 @@ const server = require('./server')<%= semiColon %>
     <% if (postgres) { %>
         postgresClient.end()<% } -%>
 
-    })<%= semiColon %>
+    })<%= semiColon -%>
+    <% } %>
 
     // log to the console that the server is running
     console.log('Server listening on port: ' + port)<%= semiColon %>
