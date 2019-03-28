@@ -30,7 +30,6 @@ module.exports = async function (program) {
     .option('-i, --indent <value>', 'The code style of indent value to use. Defaults to two spaces.')
     .option('-s, --semi-colon', 'Set this flag to use the code style of unnecessary semi-colons to your JavaScript')
     .option('-o, --operation <key>', 'The x-operation property name. Defaults to x-operation.')
-    .option('-y', 'Use defaults instead of showing interactive prompts')
     .action(async (oasDoc, outDir, command) => {
       try {
         outDir = path.resolve(process.cwd(), outDir)
