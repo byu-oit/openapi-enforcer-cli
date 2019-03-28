@@ -25,7 +25,7 @@ const template = require('../lib/template')
 module.exports = async function (oasDocPath, outDir, { dependencies=[], indent='  ', semiColon='', xController='x-controller', xOperation='x-operation' }) {
   const devDependencies = ['chai', 'mocha']
   const promises = []
-  dependencies.push('express', 'dotenv')
+  dependencies.push('express')
 
   // validate the open api document
   const [openapi, docError] = await Enforcer(oasDocPath, { fullResult: true })
@@ -134,6 +134,7 @@ module.exports = async function (oasDocPath, outDir, { dependencies=[], indent='
 
   await exec('npm install ' + dependencies.map(getDependencyKey).join(' '), outDir)
   await exec('npm install --save-dev ' + devDependencies.map(getDependencyKey).join(' '), outDir)
+  await exec('npm audit fix', outDir)
 }
 
 function getDependencyKey (dependency) {
@@ -141,7 +142,6 @@ function getDependencyKey (dependency) {
     case 'axios': return 'axios'
     case 'chai': return 'chai@4'
     case 'express': return 'express@4'
-    case 'dotenv': return 'dotenv@6'
     case 'mocha': return 'mocha@6'
     case 'mongodb': return 'mongodb@3'
     case 'mysql': return 'mysql2@1'
