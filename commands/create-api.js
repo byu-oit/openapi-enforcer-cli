@@ -19,7 +19,7 @@ const createApi = require('../controllers/create-api')
 const Enforcer = require('openapi-enforcer')
 const path = require('path')
 
-const allowedDependencies = ['axios', 'mongodb', 'mysql', 'oracle', 'postgres', 'request']
+const allowedDependencies = ['axios', 'mongodb', 'mysql', 'oracledb', 'postgres', 'request']
 
 module.exports = async function (program) {
   program
@@ -54,9 +54,10 @@ module.exports = async function (program) {
         }
 
         if (command.dependencies) {
-          command.dependencies.split(',').forEach(name => {
+          command.dependencies = command.dependencies.split(',')
+          command.dependencies.forEach(name => {
             if (allowedDependencies.indexOf(name) === -1) {
-              console.error('Invalid database specified: ' + name + '. Must be one of: ' + allowedDependencies.join(', '))
+              console.error('Invalid dependency specified: ' + name + '. Must be one of: ' + allowedDependencies.join(', '))
               process.exit(1)
             }
           })
