@@ -27,7 +27,7 @@ module.exports = async function (program) {
     .description('Create a project')
     .option('-c, --controller <key>', 'The x-controller property name. Defaults to x-controller.')
     .option('-d, --dependencies <types>', 'The optional dependencies to initialize with. Use comma separated values to specify more than one. Valid values include: ' + allowedDependencies.join(', '))
-    .option('-i, --indent <value>', 'The code style of indent value to use. Defaults to two spaces.')
+    .option('-i, --indent <value>', 'The code style of the number of spaces of indentation to use. Specify a number or "t" for tab. Defaults to 2.')
     .option('-s, --semi-colon', 'Set this flag to use the code style of unnecessary semi-colons to your JavaScript')
     .option('-o, --operation <key>', 'The x-operation property name. Defaults to x-operation.')
     .action(async (oasDoc, outDir, command) => {
@@ -64,7 +64,7 @@ module.exports = async function (program) {
 
         await createApi(oasDoc, outDir, {
           dependencies: command.dependencies,
-          indent: command.indent || '  ',
+          indent: command.indent === 't' ? '\t' : ' '.repeat(+command.indent),
           semiColon: command.semiColon ? ';' : '',
           xController: command.controller || 'x-controller',
           xOperation: command.operation || 'x-operation'
