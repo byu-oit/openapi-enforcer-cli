@@ -1,0 +1,18 @@
+'use strict'
+
+module.exports = function (<%= dependencies %>) {
+    const controller = {}<%= semiColon %>
+
+    <%
+    for (let i = 0; i < operations.length; i++) {
+        const operation = operations[i]
+        const key = /^[$_a-zA-Z][$_a-zA-Z0-9]*$/.test(operation) ? '.' + operation : '[' + operation + ']'
+    %>
+    // uncomment this function to overwrite auto generated mock response
+    // controller<%= key %> = function (req, res, next) {
+    //     res.sendStatus(501)<%= semiColon %>
+    // }<%= semiColon %>
+    <% } %>
+
+    return controller<%= semiColon %>
+}<%= semiColon %>

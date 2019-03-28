@@ -1,0 +1,86 @@
+'use strict'
+<% if (mongodb) { %>const MongoClient = require('mongodb').MongoClient<%= semiColon %>
+<% } -%>
+<% if (mysql) { %>const mysql = require('mysql2')<%= semiColon %>
+<% } -%>
+<% if (oracledb) { %>const oracledb = require('oracledb')<%= semiColon %>
+<% } -%>
+const path = require('path')<%= semiColon %>
+<% if (postgres) { %>const mysql = require('pg')<%= semiColon %>
+<% } -%>
+<% if (request) { %>const request = require('request-promise-native')<%= semiColon %>
+<% } -%>
+const server = require('./server')<%= semiColon %>
+
+(async function () {
+    <% if (mongodb) {%>
+    // connect to mongodb database
+    const mongoClient = new MongoClient(`mongodb://${process.env.MONGODB_USER}:${process.env.MONGODB_PASSWORD}@${process.env.MONGODB_HOST}:${process.env.MONGODB_PORT || 27017}/${process.env.MONGODB_DATABASE}`)<%= semiColon %>
+    <% } %>
+
+    <% if (mysql) { %>
+    // connect to MySQL database
+    const mysqlClient = mysql.createPool({
+        host: process.env.MYSQL_HOST,
+        port: process.env.MYSQL_PORT || 3306,
+        database: process.env.MYSQL_DATABASE,
+        user: process.env.MYSQL_USER,
+        password: process.env.MYSQL_PASSWORD
+    })<%= semiColon %>
+    <% } %>
+
+    <% if (oracledb) { %>
+    // connect to oracle database
+    oracledb.outFormat = oracledb.OBJECT<%= semiColon %>
+    const oracledbClient = await oracledb.createPool({
+        connectString: `${process.env.ORACLE_HOST}:${process.env.ORACLE_PORT || 1521}/${process.env.ORACLE_DATABASE}`,
+        user: process.env.ORACLE_USER,
+        password: process.env.ORACLE_PASSWORD
+    })<%= semiColon %>
+    <% } %>
+
+    <% if (postgres) { %>
+    // connect to postgres database
+    const postgresClient = new pg.Pool({
+        host: process.env.POSTGRES_HOST,
+        port: process.env.POSTGRES_PORT || 5432,
+        database: process.env.POSTGRES_DATABASE,
+        user: process.env.POSTGRES_USER,
+        password: process.env.POSTGRES_PASSWORD
+    })<%= semiColon %>
+    <% } %>
+
+    // start the server
+    const { on, port } = await server({
+        dependencies: {<% if (mongodb) { %>
+            mongoClient,<% } -%>
+        <% if (mysql) { %>
+            mysqlClient,<% } -%>
+        <% if (oracledb) { %>
+            oracledbClient,<% } -%>
+        <% if (postgres) { %>
+            postgresClient<% } -%>
+        <% if (request) { %>
+            request,<% } -%>
+
+        },
+        mockDependencies: {},
+        oasDocumentPath: path.resolve('..', '<%= oasDocName %>'),
+        port: 3000
+    })<%= semiColon %>
+
+    // when the server ends shut down database connections
+    on('end', () => {<% if (mongodb) { %>
+        mongoClient.close()<% } -%>
+    <% if (mysql) { %>
+        mysqlClient.end()<% } -%>
+    <% if (oracledb) { %>
+        oracledbClient.close(15)<% } -%>
+    <% if (postgres) { %>
+        postgresClient.end()<% } -%>
+
+    })<%= semiColon %>
+
+    // log to the console that the server is running
+    console.log('Server listening on port: ' + port)<%= semiColon %>
+})().catch(console.error)<%= semiColon %>
