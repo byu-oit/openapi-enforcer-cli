@@ -25,7 +25,7 @@ const template = require('../lib/template')
 module.exports = async function (oasDocPath, outDir, { dependencies=[], indent='  ', semiColon='', xController='x-controller', xOperation='x-operation' }) {
   const devDependencies = ['chai', 'mocha']
   const promises = []
-  dependencies.push('express')
+  dependencies.push('express', 'openapi-enforcer', 'openapi-enforcer-middleware')
 
   // validate the open api document
   const [openapi, docError] = await Enforcer(oasDocPath, { fullResult: true })
@@ -145,6 +145,8 @@ function getDependencyKey (dependency) {
     case 'mocha': return 'mocha@6'
     case 'mongodb': return 'mongodb@3'
     case 'mysql': return 'mysql2@1'
+    case 'openapi-enforcer': 'openapi-enforcer@1'
+    case 'openapi-enforcer-middleware': 'openapi-enforcer-middleware@1'
     case 'oracledb': return 'oracledb@3'
     case 'postgres': return 'pg@7'
     case 'request': return 'request@2 request-promise-native@1'
