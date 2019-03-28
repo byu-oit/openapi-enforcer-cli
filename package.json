@@ -12,7 +12,6 @@
     "debug": "^4.1.1",
     "ejs": "^2.6.1",
     "execa": "^1.0.0",
-    "inquirer": "^6.2.2",
     "openapi-enforcer": "^1.1.8",
     "standard": "^12.0.1"
   },
