@@ -15,7 +15,7 @@
  *    limitations under the License.
  **/
 'use strict'
-const Enforcer = require('../../index')
+const Enforcer = require('openapi-enforcer')
 const exec = require('../lib/exec')
 const fs = require('../lib/files')
 const path = require('path')
