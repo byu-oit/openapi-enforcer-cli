@@ -20,7 +20,7 @@ const fs = require('fs')
 const path = require('path')
 const program = require('commander')
 
-const commandsDirectory = path.resolve(__dirname, 'commands')
+const commandsDirectory = path.resolve(__dirname, '..', 'commands')
 fs.readdirSync(commandsDirectory)
   .filter(filename => /\.js$/.test(filename))
   .forEach(filename => {
