@@ -16,21 +16,23 @@
  *    limitations under the License.
  **/
 'use strict'
+const fs = require('fs')
+const path = require('path')
 const program = require('commander')
 
-const load = require('../commands')
+const commandsDirectory = path.resolve(__dirname, 'commands')
+fs.readdirSync(commandsDirectory)
+  .filter(filename => /\.js$/.test(filename))
+  .forEach(filename => {
+    const command = require(path.join(commandsDirectory, filename))
+    command(program)
+  })
 
-load(program)
+program.command('*')
+  .action((env) => {
+    if (env.length) console.error('Invalid command: ' + env + '\n')
+    program.help()
+  })
 
-program.on('*', function () {
-  console.error('Invalid command: %s\nSee --help for a list of available commands.', program.args.join(' '));
-  process.exit(1);
-});
-
-const x = program.parse(process.argv)
-
-x.on('*', function () {
-  console.log(arguments)
-})
-
-// program.help()
+if (process.argv.length <= 2) process.argv[2] = ''
+program.parse(process.argv)
