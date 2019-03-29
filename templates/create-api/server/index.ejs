@@ -1,0 +1,77 @@
+'use strict'<%= semiColon %>
+const Enforcer = require('openapi-enforcer')<%= semiColon %>
+const EnforcerMiddleware = require('openapi-enforcer-middleware')<%= semiColon %>
+const EventEmitter = require('events')<%= semiColon %>
+const express = require('express')<%= semiColon %>
+const path = require('path')<%= semiColon %>
+
+module.exports = server<%= semiColon %>
+
+function server ({dependencies = {}, mockDependencies = {}, oasDocumentPath, port = 0, shutdown }) {
+    // validate input
+    if (arguments.length === 0) return Promise.reject(Error('Missing required "options" parameter'))<%= semiColon %>
+    if (!arguments[0] || typeof arguments[0] !== 'object') return Promise.reject(Error('Required "options" parameter must be a non null object'))<%= semiColon %>
+    const options = Object.assign({}, arguments[0])<%= semiColon %>
+    if (options.hasOwnProperty('oasDocumentPath')) return Promise.reject(Error('Missing required option: oasDocumentPath'))<%= semiColon %>
+
+    const emitter = new EventEmitter()<%= semiColon %>
+    return new Promise((resolve, reject) => {
+        const app = express()<%= semiColon %>
+        const enforcer = EnforcerMiddleware(oasDocumentPath)<%= semiColon %>
+
+        // catch unexpected errors loading
+        enforcer.promise.catch(errorHandler)<%= semiColon %>
+
+        // check for explicit mock request
+        enforcer.mocks(path.resolve(__dirname, '../mocks'), false, mockDependencies)
+            .catch(errorHandler)<%= semiColon %>
+
+        // call defined operation handlers
+        enforcer.controllers(path.resolve(__dirname, '../controllers'), dependencies)
+            .catch(errorHandler)<%= semiColon %>
+
+        // produce fallback mock responses
+        enforcer.mocks(path.resolve(__dirname, '../mocks'), true, mockDependencies)
+            .catch(errorHandler)<%= semiColon %>
+
+        // tell express to run the open api enforcer middleware
+        app.use(enforcer.middleware())<%= semiColon %>
+
+        // add error handling middleware
+        app.use((err, req, res, next) => {
+            if (process.env.NODE_ENV === 'development') {
+                res.status(500)<%= semiColon %>
+                res.set('content-type', 'text/plain')<%= semiColon %>
+                res.send(err.stack + '\n\nNote that this error message will only reach the client while environment variable NODE_ENV equals "development"')<%= semiColon %>
+            } else {
+                res.sendStatus(500)<%= semiColon %>
+            }
+        })<%= semiColon %>
+
+        // start the server listening
+        const server = app.listen(port, err => {
+            if (err) return reject(err)<%= semiColon %>
+
+            // return
+            const result = {
+                close () {
+                    this.end()
+                },
+                end () {
+                    server.close()<%= semiColon %>
+                    emitter.emit('end')<%= semiColon %>
+                },
+                on (eventType, callback) {
+                    emitter.on(eventType, callback)
+                },
+                port: server.address().port
+            }<%= semiColon %>
+            resolve(result)<%= semiColon %>
+        })
+    })
+}<%= semiColon %>
+
+function errorHandler (err) {
+    console.error(err.stack)<%= semiColon %>
+    if (process.env.NODE_ENV !== 'development') process.exit(1)<%= semiColon %>
+}
