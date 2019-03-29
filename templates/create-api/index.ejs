@@ -54,7 +54,9 @@ const server = require('./server')<%= semiColon %>
 
     // start the server
     const { on, port } = await server({
-        dependencies: {<% if (mongodb) { %>
+        dependencies: {<% if (axios) { %>
+            axios,<% } -%>
+        <% if (mongodb) { %>
             mongoClient,<% } -%>
         <% if (mysql) { %>
             mysqlClient,<% } -%>
