@@ -15,3 +15,7 @@
  *    limitations under the License.
  **/
 'use strict'
+
+module.exports = {
+  createApi: require('./commands/create-api')
+}
