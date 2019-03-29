@@ -23,5 +23,5 @@ module.exports = function (program) {
     .description('Get the installed version number')
     .action(() => {
       console.log(version)
-    });
+    })
 }

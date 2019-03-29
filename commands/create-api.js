@@ -23,7 +23,7 @@ const allowedDependencies = ['axios', 'mongodb', 'mysql', 'oracledb', 'postgres'
 
 module.exports = async function (program) {
   program
-    .command('create-api <oas-doc> <out-dir>')
+    .command('create-api <oas-doc> [out-dir]')
     .description('Create a project')
     .option('-c, --controller <key>', 'The x-controller property name. Defaults to x-controller.')
     .option('-d, --dependencies <types>', 'The optional dependencies to initialize with. Use comma separated values to specify more than one. Valid values include: ' + allowedDependencies.join(', '))
@@ -65,12 +65,11 @@ module.exports = async function (program) {
 
         await createApi(oasDoc, outDir, {
           dependencies: command.dependencies,
-          indent: command.indent === 't' ? '\t' : ' '.repeat(+command.indent),
-          semiColon: command.semiColon ? ';' : '',
+          indent: command.indent === 't' ? '\t' : ' '.repeat(+command.indent || 2),
+          semiColon: command.semiColon ? '' : '',
           xController: command.controller || 'x-controller',
           xOperation: command.operation || 'x-operation'
         })
-
       } catch (err) {
         console.error(err.message)
         process.exit(1)

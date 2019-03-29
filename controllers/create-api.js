@@ -15,14 +15,14 @@
  *    limitations under the License.
  **/
 'use strict'
-const Enforcer = require('openapi-enforcer')
+const Enforcer = require('../../index')
 const exec = require('../lib/exec')
 const fs = require('../lib/files')
 const path = require('path')
 const snippet = require('../lib/snippet')
 const template = require('../lib/template')
 
-module.exports = async function (oasDocPath, outDir, { dependencies=[], indent='  ', semiColon='', xController='x-controller', xOperation='x-operation' }) {
+module.exports = async function (oasDocPath, outDir, { dependencies = [], indent = '  ', semiColon = '', xController = 'x-controller', xOperation = 'x-operation' }) {
   const devDependencies = ['chai', 'mocha']
   const promises = []
   dependencies.push('express', 'openapi-enforcer', 'openapi-enforcer-middleware')
@@ -56,6 +56,7 @@ module.exports = async function (oasDocPath, outDir, { dependencies=[], indent='
     dependencies: {},
     devDependencies: {},
     scripts: {
+      run: 'node server',
       test: 'mocha test'
     },
     keywords: [],
@@ -145,8 +146,8 @@ function getDependencyKey (dependency) {
     case 'mocha': return 'mocha@6'
     case 'mongodb': return 'mongodb@3'
     case 'mysql': return 'mysql2@1'
-    case 'openapi-enforcer': 'openapi-enforcer@1'
-    case 'openapi-enforcer-middleware': 'openapi-enforcer-middleware@1'
+    case 'openapi-enforcer': return 'openapi-enforcer@1'
+    case 'openapi-enforcer-middleware': return 'openapi-enforcer-middleware@1'
     case 'oracledb': return 'oracledb@3'
     case 'postgres': return 'pg@7'
     case 'request': return 'request@2 request-promise-native@1'
