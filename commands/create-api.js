@@ -17,23 +17,29 @@
 'use strict'
 const createApi = require('../controllers/create-api')
 const Enforcer = require('openapi-enforcer')
+const files = require('../lib/files')
+const inquirer = require('inquirer')
 const path = require('path')
 
 const allowedDependencies = ['axios', 'mongodb', 'mysql', 'oracledb', 'postgres', 'request']
 
 module.exports = async function (program) {
   program
-    .command('create-api <oas-doc> [out-dir]')
+    .command('create-api <oas-doc> <out-dir>')
     .description('Create a project')
     .option('-c, --controller <key>', 'The x-controller property name. Defaults to x-controller.')
     .option('-d, --dependencies <types>', 'The optional dependencies to initialize with. Use comma separated values to specify more than one. Valid values include: ' + allowedDependencies.join(', '))
     .option('-i, --indent <value>', 'The code style of the number of spaces of indentation to use. Specify a number or "t" for tab. Defaults to 2.')
     .option('-s, --semi-colon', 'Set this flag to use the code style of unnecessary semi-colons to your JavaScript')
     .option('-o, --operation <key>', 'The x-operation property name. Defaults to x-operation.')
+    .option('-y', 'Use defaults instead of showing interactive options')
     .action(async (oasDoc, outDir, command) => {
       try {
+        // validate the out directory is empty
         outDir = path.resolve(process.cwd(), outDir)
+        await files.ensureDirectoryEmptyOrMissing(outDir)
 
+        // validate the OAS document
         const fullPath = path.resolve(process.cwd(), oasDoc)
         const [def, docError] = await Enforcer(fullPath, { fullResult: true })
         if (docError) {
@@ -41,34 +47,105 @@ module.exports = async function (program) {
           process.exit(1)
         }
 
-        const missingIndicators = findMissingIndicators(def, {
-          xController: command.controller || 'x-controller',
-          xOperation: command.operation || 'x-operation'
+        // establish defaults
+        const prompt = {
+          controller: {
+            message: 'What is the value of your x-controller property in your Open API document',
+            type: 'input',
+            name: 'controller',
+            default: 'x-controller',
+            validate: validateNonEmpty
+          },
+          dependencies: {
+            message: 'Select the dependencies you want added to your API',
+            type: 'checkbox',
+            name: 'dependencies',
+            default: [],
+            choices: [
+              { name: 'Axios', value: 'axios' },
+              { name: 'MongoDB', value: 'mongodb' },
+              { name: 'MySQL', value: 'mysql' },
+              { name: 'OracleDB', value: 'oracledb' },
+              { name: 'PostgreSQL', value: 'postgres' },
+              { name: 'Request', value: 'request' }
+            ],
+            parseCliInput (value) {
+              const array = value.split(',')
+              array.forEach(v => {
+                const index = this.choices.findIndex(o => o.value === v)
+                if (index === -1) {
+                  console.error('Invalid dependency specified: ' + v + '. Must be one of: ' + allowedDependencies.join(', '))
+                  process.exit(1)
+                }
+              })
+              return array
+            }
+          },
+          indent: {
+            message: 'The indentation style to use',
+            type: 'list',
+            name: 'indent',
+            default: 0,
+            choices: [
+              { name: '2 spaces', value: 2 },
+              { name: '4 spaces', value: 4 },
+              { name: '1 tab', value: 't' }
+            ],
+            cliDefault: 2
+          },
+          semiColon: {
+            message: 'Use optional JavaScript semicolons',
+            type: 'confirm',
+            name: 'semiColon',
+            default: false
+          },
+          operation: {
+            message: 'What is the value of your x-operation property in your Open API document',
+            type: 'input',
+            name: 'controller',
+            default: 'x-operation',
+            validate: validateNonEmpty
+          }
+        }
+
+        // populate prompts and options values
+        const prompts = []
+        const options = {}
+        Object.keys(prompt).forEach(key => {
+          const p = prompt[key]
+          if (command.hasOwnProperty(key)) {
+            options[key] = p.parseCliInput ? p.parseCliInput(command[key]) : command[key]
+          } else if (command.Y) {
+            options[key] = p.hasOwnProperty('cliDefault') ? p.cliDefault : p.default
+          } else {
+            prompts.push(prompt[key])
+          }
         })
+
+        // if prompts should be shown then show now
+        if (!command.Y) {
+          const answers = await inquirer.prompt(prompts)
+          Object.assign(options, answers)
+        }
+
+        // check the open api document for missing x-controller or x-operation properties
+        const missingIndicators = findMissingIndicators(def, { xController: options.controller, xOperation: options.operation })
         if (missingIndicators.length) {
-          console.error('\nYour Open API document must specify x-controller and x-operation (or operationId) fields for each path item operation. Please refer to the documentation at https://github.com/byu-oit/openapi-enforcer-middleware/blob/master/docs/controllers.md for more information.\n')
+          console.error('\nYour Open API document must specify ' + options.controller + ' and ' +
+            options.operation + ' (or operationId) fields for each path item operation. ' +
+            ' Please refer to the documentation at https://github.com/byu-oit/openapi-enforcer-middleware/blob/master/docs/controllers.md for more information.\n')
           missingIndicators.forEach(item => {
             console.error(item.operation + '\n  Missing: ' + item.missing + '\n')
           })
           process.exit(1)
         }
 
-        if (command.dependencies) {
-          command.dependencies = command.dependencies.split(',')
-          command.dependencies.forEach(name => {
-            if (allowedDependencies.indexOf(name) === -1) {
-              console.error('Invalid dependency specified: ' + name + '. Must be one of: ' + allowedDependencies.join(', '))
-              process.exit(1)
-            }
-          })
-        }
-
         await createApi(oasDoc, outDir, {
-          dependencies: command.dependencies,
-          indent: command.indent === 't' ? '\t' : ' '.repeat(+command.indent || 2),
-          semiColon: command.semiColon ? '' : '',
-          xController: command.controller || 'x-controller',
-          xOperation: command.operation || 'x-operation'
+          dependencies: options.dependencies,
+          indent: options.indent,
+          semiColon: options.semiColon,
+          xController: options.controller,
+          xOperation: options.operation
         })
       } catch (err) {
         console.error(err.message)
@@ -103,4 +180,10 @@ function findMissingIndicators (openapi, { xController, xOperation }) {
   })
 
   return results
+}
+
+function validateNonEmpty (value) {
+  return value.length === 0
+    ? 'Non empty string required'
+    : true
 }
