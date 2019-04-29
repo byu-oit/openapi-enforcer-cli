@@ -4,7 +4,7 @@
   "description": "A command line tool for the openapi enforcer libraries",
   "main": "index.js",
   "bin": {
-    "openapi-enforcer": "./bin/cli.js"
+    "openapi-enforcer": "./bin/index.js"
   },
   "dependencies": {
     "cli-format": "^3.0.9",
