@@ -7,71 +7,88 @@ const path = require('path')<%= semiColon %>
 
 module.exports = server<%= semiColon %>
 
-function server ({dependencies = {}, mockDependencies = {}, oasDocumentPath, port = 0, shutdown }) {
+async function server (options) {
     // validate input
     if (arguments.length === 0) return Promise.reject(Error('Missing required "options" parameter'))<%= semiColon %>
-    if (!arguments[0] || typeof arguments[0] !== 'object') return Promise.reject(Error('Required "options" parameter must be a non null object'))<%= semiColon %>
-    const options = Object.assign({}, arguments[0])<%= semiColon %>
-    if (options.hasOwnProperty('oasDocumentPath')) return Promise.reject(Error('Missing required option: oasDocumentPath'))<%= semiColon %>
+    if (!options || typeof options !== 'object') return Promise.reject(Error('Required "options" parameter must be a non null object'))<%= semiColon %>
+    if (!options.hasOwnProperty('oasDocumentPath')) return Promise.reject(Error('Missing required option: oasDocumentPath'))<%= semiColon %>
+
+    // destructure options
+    const { dependencies = {}, mockDependencies = {}, oasDocumentPath, port = 0, production = false } = options<%= semiColon %>
 
     const emitter = new EventEmitter()<%= semiColon %>
-    return new Promise((resolve, reject) => {
-        const app = express()<%= semiColon %>
-        const enforcer = EnforcerMiddleware(oasDocumentPath)<%= semiColon %>
+    const app = express()<%= semiColon %>
+    const enforcer = EnforcerMiddleware(oasDocumentPath)<%= semiColon %>
+    const loadErrorState = {}<%= semiColon %>
 
-        // catch unexpected errors loading
-        enforcer.promise.catch(errorHandler)<%= semiColon %>
+    // wait for middleware to load
+    await enforcer.promise<%= semiColon %>
 
-        // check for explicit mock request
-        enforcer.mocks(path.resolve(__dirname, '../mocks'), false, mockDependencies)
-            .catch(errorHandler)<%= semiColon %>
+    // check for explicit mock request
+    await enforcer.mocks(path.resolve(__dirname, '../mocks'), false, mockDependencies)
+        .catch(loadErrorHandler(production, true, loadErrorState))<%= semiColon %>
 
-        // call defined operation handlers
-        enforcer.controllers(path.resolve(__dirname, '../controllers'), dependencies)
-            .catch(errorHandler)<%= semiColon %>
+    // call defined operation handlers
+    await enforcer.controllers(path.resolve(__dirname, '../controllers'), dependencies)
+        .catch(loadErrorHandler(production, false, loadErrorState))<%= semiColon %>
 
-        // produce fallback mock responses
-        enforcer.mocks(path.resolve(__dirname, '../mocks'), true, mockDependencies)
-            .catch(errorHandler)<%= semiColon %>
+    // produce fallback mock responses in development
+    if (!production) {
+        await enforcer.mocks(path.resolve(__dirname, '../mocks'), true, mockDependencies)
+            .catch(loadErrorHandler(production, true, loadErrorState))<%= semiColon %>
+    }
 
-        // tell express to run the open api enforcer middleware
-        app.use(enforcer.middleware())<%= semiColon %>
+    // tell express to run the open api enforcer middleware
+    app.use(enforcer.middleware())<%= semiColon %>
 
-        // add error handling middleware
-        app.use((err, req, res, next) => {
-            if (process.env.NODE_ENV === 'development') {
-                res.status(500)<%= semiColon %>
-                res.set('content-type', 'text/plain')<%= semiColon %>
-                res.send(err.stack + '\n\nNote that this error message will only reach the client while environment variable NODE_ENV equals "development"')<%= semiColon %>
-            } else {
-                res.sendStatus(500)<%= semiColon %>
-            }
-        })<%= semiColon %>
+    // add error handling middleware
+    app.use((err, req, res, next) => {
+        if (production) {
+            res.sendStatus(500)<%= semiColon %>
+        } else {
+            res.status(500)<%= semiColon %>
+            res.set('content-type', 'text/plain')<%= semiColon %>
+            res.send(err.stack + '\n\nNote that this error message will only reach the client while configuration is not set to production')<%= semiColon %>
+        }
+    })<%= semiColon %>
 
+    return new Promise(async (resolve, reject) => {
         // start the server listening
         const server = app.listen(port, err => {
             if (err) return reject(err)<%= semiColon %>
 
-            // return
+            // resolve to an object
             const result = {
                 close () {
-                    this.end()
+                    this.end()<%= semiColon %>
                 },
                 end () {
                     server.close()<%= semiColon %>
                     emitter.emit('end')<%= semiColon %>
                 },
                 on (eventType, callback) {
-                    emitter.on(eventType, callback)
+                    emitter.on(eventType, callback)<%= semiColon %>
                 },
                 port: server.address().port
             }<%= semiColon %>
             resolve(result)<%= semiColon %>
-        })
-    })
+        })<%= semiColon %>
+    })<%= semiColon %>
 }<%= semiColon %>
 
-function errorHandler (err) {
-    console.error(err.stack)<%= semiColon %>
-    if (process.env.NODE_ENV !== 'development') process.exit(1)<%= semiColon %>
+function loadErrorHandler (production, isMock, errState) {
+    return function (err) {
+        if (production && !isMock) {
+            throw err<%= semiColon %>
+        } else if (isMock && !errState.mockErrorHandled) {
+            errState.mockErrorHandled = true<%= semiColon %>
+            const lines = err.message.split(/\r\n|\r|\n/)<%= semiColon %>
+            lines[0] += ' so these mocks will be auto generated:'<%= semiColon %>
+            console.log('\n' + lines.join('\n'))<%= semiColon %>
+        } else if (!isMock) {
+            const lines = err.message.split(/\r\n|\r|\n/)<%= semiColon %>
+            lines[0] += '. You will want to implement these for production:'<%= semiColon %>
+            console.error('\n' + lines.join('\n'))<%= semiColon %>
+        }
+    }
 }

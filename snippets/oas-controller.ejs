@@ -8,10 +8,10 @@ module.exports = function (<%= dependencies %>) {
         const operation = operations[i]
         const key = /^[$_a-zA-Z][$_a-zA-Z0-9]*$/.test(operation) ? '.' + operation : '[' + operation + ']'
     %>
-    controller<%= key %> = function (req, res, next) {
-        // TODO: implement this operation
-        res.sendStatus(501)<%= semiColon %>
-    }<%= semiColon %>
+    // uncomment this function to create an implemented response
+    // controller<%= key %> = function (req, res, next) {
+    //     res.sendStatus(501)<%= semiColon %>
+    // }<%= semiColon %>
     <% } %>
 
     return controller<%= semiColon %>
