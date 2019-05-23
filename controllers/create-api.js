@@ -22,7 +22,23 @@ const path = require('path')
 const snippet = require('../lib/snippet')
 const template = require('../lib/template')
 
-module.exports = async function (oasDocPath, outDir, { dependencies = [], indent = '  ', semiColon = '', xController = 'x-controller', xOperation = 'x-operation' }) {
+/**
+ * Create an API from the starter.
+ * @param {string} oasDocPath The directory path to the Open API document.
+ * @param {string} outDir The directory to output the starter to.
+ * @param {object} options
+ * @param {string[]} options.dependencies
+ * @param {number,string} options.indent
+ * @param {boolean} options.semiColon
+ * @param {string} options.xController
+ * @param {string} options.xOperation
+ * @returns {Promise<void>}
+ */
+module.exports = async function (oasDocPath, outDir, options = {}) {
+  const { dependencies = [], xController = 'x-controller', xOperation = 'x-operation' } = options
+  let indent = options.indent === 't' ? '\t' : ' '.repeat(options.indent || 2)
+  let semiColon = options.semiColon ? ';' : ''
+
   const devDependencies = ['chai', 'mocha']
   const promises = []
   dependencies.push('express', 'openapi-enforcer', 'openapi-enforcer-middleware')
@@ -56,7 +72,7 @@ module.exports = async function (oasDocPath, outDir, { dependencies = [], indent
     dependencies: {},
     devDependencies: {},
     scripts: {
-      run: 'node server',
+      start: 'node index',
       test: 'mocha test'
     },
     keywords: [],
@@ -71,13 +87,7 @@ module.exports = async function (oasDocPath, outDir, { dependencies = [], indent
   // generate template files
   promises.push(template('create-api', outDir, { indent, semiColon }, {
     'index.ejs': {
-      axios: dependencies.indexOf('axios') !== -1,
-      mongodb: dependencies.indexOf('mongodb') !== -1,
-      mysql: dependencies.indexOf('mysql') !== -1,
-      oasDocName: path.basename(oasDocPath),
-      oracledb: dependencies.indexOf('oracledb') !== -1,
-      postgres: dependencies.indexOf('postgres') !== -1,
-      request: dependencies.indexOf('request') !== -1
+      oasDocName: path.basename(oasDocPath)
     }
   }))
 
@@ -104,21 +114,13 @@ module.exports = async function (oasDocPath, outDir, { dependencies = [], indent
     const operationNames = controllersMap[controllerName]
     operationNames.sort()
 
-    const deps = []
-    if (dependencies.indexOf('axios') !== -1) deps.push('axios')
-    if (dependencies.indexOf('mongodb') !== -1) deps.push('mongoClient')
-    if (dependencies.indexOf('mysql') !== -1) deps.push('mysqlClient')
-    if (dependencies.indexOf('oracledb') !== -1) deps.push('oracledbClient')
-    if (dependencies.indexOf('postgres') !== -1) deps.push('postgresClient')
-    if (dependencies.indexOf('request') !== -1) deps.push('request')
-
     const content = await snippet('oas-controller', { indent, semiColon }, {
-      dependencies: deps.length ? '{ ' + deps.join(', ') + ' }' : '',
+      dependencies: '{}',
       operations: operationNames
     })
 
     const mockContent = await snippet('oas-mock-controller', { indent, semiColon }, {
-      dependencies: deps.length ? '{ ' + deps.join(', ') + ' }' : '',
+      dependencies: '{}',
       operations: operationNames
     })
 
@@ -140,17 +142,11 @@ module.exports = async function (oasDocPath, outDir, { dependencies = [], indent
 
 function getDependencyKey (dependency) {
   switch (dependency.toLowerCase()) {
-    case 'axios': return 'axios'
     case 'chai': return 'chai@4'
     case 'express': return 'express@4'
     case 'mocha': return 'mocha@6'
-    case 'mongodb': return 'mongodb@3'
-    case 'mysql': return 'mysql2@1'
     case 'openapi-enforcer': return 'openapi-enforcer@1'
     case 'openapi-enforcer-middleware': return 'openapi-enforcer-middleware@1'
-    case 'oracledb': return 'oracledb@3'
-    case 'postgres': return 'pg@7'
-    case 'request': return 'request@2 request-promise-native@1'
     default:
       throw Error('Invalid dependency specified: ' + dependency)
   }
