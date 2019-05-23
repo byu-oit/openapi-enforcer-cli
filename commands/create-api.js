@@ -18,19 +18,15 @@
 const createApi = require('../controllers/create-api')
 const Enforcer = require('openapi-enforcer')
 const files = require('../lib/files')
-const inquirer = require('inquirer')
 const path = require('path')
-
-const allowedDependencies = ['axios', 'mongodb', 'mysql', 'oracledb', 'postgres', 'request']
 
 module.exports = async function (program) {
   program
     .command('create-api <oas-doc> <out-dir>')
     .description('Create a project')
     .option('-c, --controller <key>', 'The x-controller property name. Defaults to x-controller.')
-    .option('-d, --dependencies <types>', 'The optional dependencies to initialize with. Use comma separated values to specify more than one. Valid values include: ' + allowedDependencies.join(', '))
-    .option('-i, --indent <value>', 'The code style of the number of spaces of indentation to use. Specify a number or "t" for tab. Defaults to 2.')
-    .option('-s, --semi-colon', 'Set this flag to use the code style of unnecessary semi-colons to your JavaScript')
+    .option('-i, --indent <value>', 'The code style of the number of spaces of indentation to use. Specify a number of spaces or "t" for tab. Defaults to 2.')
+    .option('-s, --no-semi-colon', 'Set this flag to use the code style of removing unnecessary semi-colons to your JavaScript.')
     .option('-o, --operation <key>', 'The x-operation property name. Defaults to x-operation.')
     .option('-y', 'Use defaults instead of showing interactive options')
     .action(async (oasDoc, outDir, command) => {
@@ -48,85 +44,22 @@ module.exports = async function (program) {
         }
 
         // establish defaults
-        const prompt = {
-          controller: {
-            message: 'What is the value of your x-controller property in your Open API document',
-            type: 'input',
-            name: 'controller',
-            default: 'x-controller',
-            validate: validateNonEmpty
-          },
-          dependencies: {
-            message: 'Select the dependencies you want added to your API',
-            type: 'checkbox',
-            name: 'dependencies',
-            default: [],
-            choices: [
-              { name: 'Axios', value: 'axios' },
-              { name: 'MongoDB', value: 'mongodb' },
-              { name: 'MySQL', value: 'mysql' },
-              { name: 'OracleDB', value: 'oracledb' },
-              { name: 'PostgreSQL', value: 'postgres' },
-              { name: 'Request', value: 'request' }
-            ],
-            parseCliInput (value) {
-              const array = value.split(',')
-              array.forEach(v => {
-                const index = this.choices.findIndex(o => o.value === v)
-                if (index === -1) {
-                  console.error('Invalid dependency specified: ' + v + '. Must be one of: ' + allowedDependencies.join(', '))
-                  process.exit(1)
-                }
-              })
-              return array
-            }
-          },
-          indent: {
-            message: 'The indentation style to use',
-            type: 'list',
-            name: 'indent',
-            default: 0,
-            choices: [
-              { name: '2 spaces', value: 2 },
-              { name: '4 spaces', value: 4 },
-              { name: '1 tab', value: 't' }
-            ],
-            cliDefault: 2
-          },
-          semiColon: {
-            message: 'Use optional JavaScript semicolons',
-            type: 'confirm',
-            name: 'semiColon',
-            default: false
-          },
-          operation: {
-            message: 'What is the value of your x-operation property in your Open API document',
-            type: 'input',
-            name: 'controller',
-            default: 'x-operation',
-            validate: validateNonEmpty
-          }
+        const inputs = {
+          controller: 'x-controller',
+          indent: 2,
+          noSemiColon: false,
+          operation: 'x-operation'
         }
 
-        // populate prompts and options values
-        const prompts = []
+        // populate options values
         const options = {}
-        Object.keys(prompt).forEach(key => {
-          const p = prompt[key]
+        Object.keys(inputs).forEach(key => {
           if (command.hasOwnProperty(key)) {
-            options[key] = p.parseCliInput ? p.parseCliInput(command[key]) : command[key]
-          } else if (command.Y) {
-            options[key] = p.hasOwnProperty('cliDefault') ? p.cliDefault : p.default
+            options[key] = command[key]
           } else {
-            prompts.push(prompt[key])
+            options[key] = inputs[key]
           }
         })
-
-        // if prompts should be shown then show now
-        if (!command.Y) {
-          const answers = await inquirer.prompt(prompts)
-          Object.assign(options, answers)
-        }
 
         // check the open api document for missing x-controller or x-operation properties
         const missingIndicators = findMissingIndicators(def, { xController: options.controller, xOperation: options.operation })
@@ -143,10 +76,16 @@ module.exports = async function (program) {
         await createApi(oasDoc, outDir, {
           dependencies: options.dependencies,
           indent: options.indent,
-          semiColon: options.semiColon,
+          semiColon: !options.noSemiColon,
           xController: options.controller,
           xOperation: options.operation
         })
+
+        console.log('\n================================================================================\n')
+        console.log('API created successfully.')
+        console.log('Start your API server with the command: npm start')
+        console.log('As is, your API can produce mocked responses, so try hitting your API endpoints.')
+        console.log('\n================================================================================\n')
       } catch (err) {
         console.error(err.message)
         process.exit(1)
@@ -180,10 +119,4 @@ function findMissingIndicators (openapi, { xController, xOperation }) {
   })
 
   return results
-}
-
-function validateNonEmpty (value) {
-  return value.length === 0
-    ? 'Non empty string required'
-    : true
 }
