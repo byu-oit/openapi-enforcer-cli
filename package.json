@@ -7,12 +7,15 @@
     "openapi-enforcer": "./bin/index.js"
   },
   "dependencies": {
+    "chokidar": "^3.2.2",
     "cli-format": "^3.0.9",
     "commander": "^2.19.0",
     "debug": "^4.1.1",
     "ejs": "^2.6.1",
     "execa": "^1.0.0",
-    "openapi-enforcer": "^1.1.8"
+    "express": "^4.17.1",
+    "openapi-enforcer": "^1.1.8",
+    "socket.io": "^2.3.0"
   },
   "devDependencies": {
     "standard": "^12.0.1"
