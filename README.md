@@ -21,6 +21,7 @@ Options:
   -h, --help                                output usage information
 
 Commands:
+  build <oas-doc> <out-path>                Dereference and build a single OpenAPI file from multiple sources
   create-api [options] <oas-doc> [out-dir]  Create a project
   editor [options] <oas-doc>                View live Redoc UI while editing OpenAPI document
   help                                      Display help
@@ -29,7 +30,6 @@ Commands:
 ```
 
 To get help about a specific command, specify the command followed by the `--help` flag.
-
 ```sh
 $ openapi-enforcer create-api --help
 
