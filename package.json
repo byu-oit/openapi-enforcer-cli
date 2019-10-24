@@ -26,7 +26,10 @@
   "keywords": [
     "openapi",
     "swagger",
-    "cli"
+    "cli",
+    "ui",
+    "editor",
+    "validate"
   ],
   "author": "James Speirs <james.speirs@gmail.com>",
   "license": "Apache-2.0"
