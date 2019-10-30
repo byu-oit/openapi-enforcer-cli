@@ -1,6 +1,8 @@
 const chokidar = require('chokidar')
 const fs = require('fs')
 const Enforcer = require('openapi-enforcer')
+const os = require('os')
+const path = require('path')
 const RefParser = require('json-schema-ref-parser')
 
 module.exports = Builder
@@ -19,7 +21,7 @@ function Builder (source, componentOptions) {
     const openApiDoc = await RefParser.bundle(source)
     const [ , err, warn ] = await Enforcer(openApiDoc, {
       fullResult: true,
-      componentOptions
+      componentOptions: Object.assign({}, componentOptions)
     })
     if (err) {
       console.log(err.toString())
@@ -146,4 +148,16 @@ function Builder (source, componentOptions) {
 
     return additions
   }
+}
+
+function tempFileMapping (filePaths) {
+  return new Promise((resolve, reject) => {
+    fs.mkdir(path.join(os.tmpdir(), 'openapi-'), (err, dirPath) => {
+      if (err) {
+        reject(err)
+      } else {
+
+      }
+    })
+  })
 }
