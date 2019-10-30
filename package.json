@@ -1,6 +1,6 @@
 {
   "name": "openapi-enforcer-cli",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "A command line tool for the openapi enforcer libraries",
   "main": "index.js",
   "bin": {
