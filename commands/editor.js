@@ -22,7 +22,7 @@ module.exports = async function (program) {
   program
     .command('editor <oas-doc>')
     .description('View live Redoc UI while editing OpenAPI document')
-    .option('-c, --component-options', 'Path to a JSON file that contains the OpenAPI Enforcer component options.')
+    .option('-c, --component-options <path>', 'Path to a JSON file that contains the OpenAPI Enforcer component options.')
     .option('-p, --port <key>', 'The port number to serve the API on. Defaults to 8080.')
     .action(async (oasDoc, command) => {
       try {
