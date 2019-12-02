@@ -22,7 +22,8 @@ module.exports = function (program) {
   program
     .command('validate <oas-doc>')
     .description('Validate an Open API Specification document')
-    .action((oasDoc) => {
+    .option('-c, --clean-exit', 'If the OpenAPI document is not valid, do not throw an exception.')
+    .action((oasDoc, command) => {
       const fullPath = path.resolve(process.cwd(), oasDoc)
       Enforcer(fullPath, { fullResult: true })
         .then(result => {
@@ -34,9 +35,12 @@ module.exports = function (program) {
           } else {
             console.log('\nDocument is valid')
           }
+
+          if (!command.cleanExit && result.error) process.exit(1)
         })
         .catch(err => {
           console.log('\n' + err.message)
+          if (!command.cleanExit) process.exit(1)
         })
     })
 }
