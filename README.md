@@ -23,7 +23,7 @@ Options:
 Commands:
   build <oas-doc> <out-path>                Dereference and build a single OpenAPI file from multiple sources
   create-api [options] <oas-doc> [out-dir]  Create a project
-  editor [options] <oas-doc>                View live Redoc UI while editing OpenAPI document
+  docs [options] <oas-doc>                  Produce documentation with Redoc UI while editing an OpenAPI document
   help                                      Display help
   validate <oas-doc>                        Validate an Open API Specification document
   version                                   Get the installed version number

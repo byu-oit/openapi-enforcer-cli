@@ -20,13 +20,15 @@ const path = require('path')
 
 module.exports = async function (program) {
   program
-    .command('editor <oas-doc>')
-    .description('View live Redoc UI while editing OpenAPI document')
+    .command('docs <oas-doc>')
+    .description('Produce documentation with Redoc UI while editing an OpenAPI document')
+    .option('-b, --build-directory <path>', 'A directory to output a build of your documentation to.')
     .option('-c, --component-options <path>', 'Path to a JSON file that contains the OpenAPI Enforcer component options.')
     .option('-p, --port <key>', 'The port number to serve the API on. Defaults to 8080.')
     .action(async (oasDoc, command) => {
       try {
         const options = {}
+        if (command.hasOwnProperty('buildDirectory')) options.buildDirectory = path.resolve(process.cwd(), command.buildDirectory)
         options.port = command.hasOwnProperty('port') ? command.port : 8080
         options.componentOptions = command.hasOwnProperty('componentOptions')
           ? require(path.resolve(process.cwd(), command.componentOptions))
