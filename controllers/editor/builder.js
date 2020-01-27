@@ -1,8 +1,6 @@
 const chokidar = require('chokidar')
 const fs = require('fs')
 const Enforcer = require('openapi-enforcer')
-const os = require('os')
-const path = require('path')
 const RefParser = require('json-schema-ref-parser')
 
 module.exports = Builder
@@ -67,7 +65,9 @@ function Builder (source, componentOptions) {
       await updateWatchedPaths()
       const result = await factory.build()
       if (handler) handler(null, result)
-    } catch (err) {}
+    } catch (err) {
+      console.error(err.stack)
+    }
 
     watcher.on('all', (event, filePath) => {
       switch (event) {
@@ -148,16 +148,4 @@ function Builder (source, componentOptions) {
 
     return additions
   }
-}
-
-function tempFileMapping (filePaths) {
-  return new Promise((resolve, reject) => {
-    fs.mkdir(path.join(os.tmpdir(), 'openapi-'), (err, dirPath) => {
-      if (err) {
-        reject(err)
-      } else {
-
-      }
-    })
-  })
 }
