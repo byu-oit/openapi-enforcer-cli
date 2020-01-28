@@ -53,7 +53,7 @@ module.exports = function (openApiDocPath, { buildDirectory = '', componentOptio
 
   if (buildDirectory) {
     ensureDirectory(buildDirectory)
-      .then(() => copyDir(path.resolve(__dirname, 'www'), buildDirectory))
+      .then(() => copyDir(path.resolve(__dirname, 'build'), buildDirectory))
       .catch(err => {
         console.error('Unable to build to directory. ' + buildDirectory)
         console.error(err.stack)
