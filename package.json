@@ -14,8 +14,8 @@
     "ejs": "^2.6.1",
     "execa": "^1.0.0",
     "express": "^4.17.1",
-    "json-schema-ref-parser": "^7.1.2",
-    "openapi-enforcer": "^1.6.1",
+    "json-schema-ref-parser": "^7.1.4",
+    "openapi-enforcer": "^1.10.0",
     "socket.io": "^2.3.0"
   },
   "devDependencies": {
