@@ -7,32 +7,27 @@ const socket = require('socket.io')
 
 const wwwPath = path.resolve(__dirname, 'www')
 
-module.exports = function (openApiDocPath, { buildDirectory = '', componentOptions = {}, port = 8080 } = {}) {
+exports.server = function (openApiDocPath, { buildDirectory = '', componentOptions = {}, port = 8080 } = {}) {
   const app = express()
   const server = http.createServer(app)
   const io = socket(server)
-  const builder = Builder(openApiDocPath, componentOptions)
-  let openapi
+  const builder = exports.build(openApiDocPath, buildDirectory, {
+    componentOptions,
+    watch: true
+  })
   let buildError
 
-  builder.watch((err, doc) => {
-    if (err) {
-      buildError = err.toString()
-      io.emit('build-error', buildError)
-    } else {
-      openapi = doc
-      buildError = false
-      io.emit('refresh')
-      if (buildDirectory) {
-        fs.writeFile(path.resolve(buildDirectory, 'openapi.json'), JSON.stringify(openapi, null, 2), err => {
-          if (err) console.error(err.stack)
-        })
-      }
-    }
+  builder.on('build-error', err => {
+    buildError = err
+    io.emit('build-error', err)
+  })
+
+  builder.on('refresh', () => {
+    io.emit('refresh')
   })
 
   app.get('/openapi.json', (req, res) => {
-    res.send(openapi)
+    res.send(builder.openapi)
   })
 
   app.use(express.static(wwwPath))
@@ -50,15 +45,79 @@ module.exports = function (openApiDocPath, { buildDirectory = '', componentOptio
       console.log('=========================\nServer started:\n  http://127.0.0.1:' + port + '\n  http://localhost:' + port + '\n=========================')
     }
   })
+}
+
+exports.build = function (openApiDocPath, buildDirectory, { componentOptions, watch }) {
+  const builder = Builder(openApiDocPath, componentOptions)
+  const handlers = { refresh: [], 'build-error': [] }
+  let openapi = ''
+  let buildError
+
+  if (watch) {
+    builder.watch((err, doc) => {
+      if (err) {
+        buildError = err.toString()
+        trigger('build-error', buildError)
+      } else {
+        openapi = doc
+        buildError = false
+        trigger('refresh')
+        if (buildDirectory) {
+          fs.writeFile(path.resolve(buildDirectory, 'openapi.json'), JSON.stringify(openapi, null, 2), err => {
+            if (err) console.error(err.stack)
+          })
+        }
+      }
+    })
+  }
 
   if (buildDirectory) {
     ensureDirectory(buildDirectory)
       .then(() => copyDir(path.resolve(__dirname, 'build'), buildDirectory))
+      .then(() => {
+        if (!watch) {
+          return new Promise((resolve, reject) => {
+            fs.writeFile(path.resolve(buildDirectory, 'openapi.json'), JSON.stringify(openapi, null, 2), err => {
+              if (err) return reject(err)
+              console.log('Built successfully')
+              resolve()
+            })
+          })
+        }
+      })
       .catch(err => {
         console.error('Unable to build to directory. ' + buildDirectory)
         console.error(err.stack)
       })
   }
+
+  function trigger (type, ...args) {
+    handlers[type].forEach(handler => {
+      handler(...args)
+    })
+  }
+
+  const result = {
+    off: (type, handler) => {
+      if (handlers[type]) {
+        const index = handlers[type].indexOf(handler)
+        if (index !== -1) handlers[type].splice(index, 1)
+      }
+    },
+
+    on: (type, handler) => {
+      if (handlers[type]) {
+        const index = handlers[type].indexOf(handler)
+        if (index === -1) handlers[type].push(handler)
+      }
+    }
+  }
+
+  Object.defineProperty(result, 'openapi', {
+    get () { return openapi }
+  })
+
+  return result
 }
 
 async function ensureDirectory (dirPath) {

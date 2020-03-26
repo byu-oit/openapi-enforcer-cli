@@ -5,6 +5,8 @@ const RefParser = require('json-schema-ref-parser')
 
 module.exports = Builder
 
+Enforcer.config.useNewRefParser = true
+
 function Builder (source, componentOptions) {
   const factory = {}
   const rxRemotePath = /^https?:\/\//
